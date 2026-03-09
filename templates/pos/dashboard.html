@@ -1,0 +1,113 @@
+{% extends "pos/base.html" %}
+
+{% block title %}Dashboard · Storebase POS{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">Analytics Dashboard</h1>
+
+<div class="grid gap-4 md:grid-cols-4 mb-6">
+    <div class="bg-white rounded-xl shadow p-4">
+        <div class="text-xs uppercase text-slate-500">Daily revenue</div>
+        <div class="text-2xl font-semibold mt-1">${{ daily_revenue|floatformat:2 }}</div>
+    </div>
+    <div class="bg-white rounded-xl shadow p-4">
+        <div class="text-xs uppercase text-slate-500">Weekly revenue</div>
+        <div class="text-2xl font-semibold mt-1">${{ weekly_revenue|floatformat:2 }}</div>
+    </div>
+    <div class="bg-white rounded-xl shadow p-4">
+        <div class="text-xs uppercase text-slate-500">Monthly revenue</div>
+        <div class="text-2xl font-semibold mt-1">${{ monthly_revenue|floatformat:2 }}</div>
+    </div>
+    <div class="bg-white rounded-xl shadow p-4">
+        <div class="text-xs uppercase text-slate-500">Yearly revenue</div>
+        <div class="text-2xl font-semibold mt-1">${{ yearly_revenue|floatformat:2 }}</div>
+    </div>
+</div>
+
+<div class="grid gap-6 md:grid-cols-2">
+    <div class="bg-white rounded-xl shadow p-4">
+        <div class="flex items-center justify-between mb-2">
+            <h2 class="font-semibold">Best selling products</h2>
+            <span class="text-xs text-slate-500">Top 10</span>
+        </div>
+        <table class="min-w-full text-sm">
+            <thead>
+            <tr class="text-left text-slate-500 border-b">
+                <th class="py-2 pr-2">Product</th>
+                <th class="py-2 px-2 text-right">Units sold</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for product in best_selling_products %}
+                <tr class="border-b last:border-0">
+                    <td class="py-2 pr-2">
+                        <div class="font-medium">{{ product.name }}</div>
+                        <div class="text-xs text-slate-500">{{ product.product_id }}</div>
+                    </td>
+                    <td class="py-2 px-2 text-right font-semibold">{{ product.total_sold }}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="2" class="py-4 text-center text-slate-500">
+                        No sales yet.
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="bg-white rounded-xl shadow p-4">
+        <div class="flex items-center justify-between mb-2">
+            <h2 class="font-semibold">Low stock alerts</h2>
+            <span class="text-xs text-slate-500">Below {{ low_stock_threshold }} units</span>
+        </div>
+        <table class="min-w-full text-sm">
+            <thead>
+            <tr class="text-left text-slate-500 border-b">
+                <th class="py-2 pr-2">Product</th>
+                <th class="py-2 px-2 text-right">Stock</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for product in low_stock_products %}
+                <tr class="border-b last:border-0 {% if product.quantity == 0 %}bg-red-50{% else %}bg-amber-50{% endif %}">
+                    <td class="py-2 pr-2">
+                        <div class="font-medium">{{ product.name }}</div>
+                        <div class="text-xs text-slate-500">{{ product.product_id }} · {{ product.size }} · {{ product.color }}</div>
+                    </td>
+                    <td class="py-2 px-2 text-right font-semibold">{{ product.quantity }}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="2" class="py-4 text-center text-slate-500">
+                        No low stock items 🎉
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="mt-6 bg-white rounded-xl shadow p-4">
+    <h2 class="font-semibold mb-2">Daily revenue (last 14 days)</h2>
+    <div class="grid grid-cols-7 gap-2 text-xs">
+        {% for point in daily_series %}
+            <div class="flex flex-col items-center">
+                <div class="h-16 w-full bg-indigo-100 rounded">
+                    {% if point.total %}
+                        <div class="bg-indigo-500 rounded h-full" style="height: {{ point.total|floatformat:0 }}%"></div>
+                    {% endif %}
+                </div>
+                <div class="mt-1 text-[10px] text-slate-500">
+                    {{ point.day|date:"m-d" }}
+                </div>
+            </div>
+        {% empty %}
+            <div class="text-slate-500">No sales yet.</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+

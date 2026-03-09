@@ -1,0 +1,46 @@
+{% extends "pos/base.html" %}
+
+{% block title %}Product Label · Storebase POS{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+    <h1 class="text-2xl font-semibold">Product label</h1>
+    <button onclick="window.print()"
+            class="inline-flex items-center px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-500">
+        Print
+    </button>
+</div>
+
+<div class="bg-white rounded-xl shadow p-6 max-w-md print:max-w-none print:shadow-none print:border">
+    <div class="flex items-center justify-between mb-4">
+        <div>
+            <div class="font-semibold text-lg">{{ product.name }}</div>
+            <div class="text-xs text-slate-500">
+                {{ product.product_id }} · {{ product.size }} · {{ product.color }}
+            </div>
+        </div>
+        <div class="text-xl font-bold">${{ product.price }}</div>
+    </div>
+
+    <div class="flex justify-center">
+        {% if product.qr_code_image %}
+            <img src="{{ product.qr_code_image.url }}" alt="QR for {{ product.product_id }}"
+                 class="w-40 h-40 object-contain">
+        {% else %}
+            <p class="text-slate-500 text-center">QR code will appear here after saving.</p>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+@media print {
+    header, nav, footer, a[href]:after {
+        display: none !important;
+    }
+    body {
+        background: #ffffff !important;
+    }
+}
+</style>
+{% endblock %}
+

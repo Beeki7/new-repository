@@ -1,0 +1,25 @@
+{% extends "pos/base.html" %}
+
+{% block title %}Delete Product · Storebase POS{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">Delete product</h1>
+
+<div class="bg-white rounded-xl shadow p-4 max-w-lg">
+    <p class="mb-4">
+        Are you sure you want to delete
+        <span class="font-semibold">{{ product.name }}</span>
+        ({{ product.product_id }})?
+    </p>
+
+    <form method="post" class="flex items-center justify-between">
+        {% csrf_token %}
+        <a href="{% url 'product_list' %}" class="text-slate-600 text-sm hover:underline">Cancel</a>
+        <button type="submit"
+                class="inline-flex items-center px-4 py-2 rounded-lg bg-red-600 text-white font-semibold shadow hover:bg-red-500">
+            Delete
+        </button>
+    </form>
+</div>
+{% endblock %}
+

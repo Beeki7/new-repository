@@ -1,0 +1,75 @@
+{% extends "pos/base.html" %}
+
+{% block title %}Products · Storebase POS{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+    <h1 class="text-2xl font-semibold">Products</h1>
+    <a href="{% url 'product_create' %}"
+       class="inline-flex items-center px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-500">
+        + New product
+    </a>
+</div>
+
+<div class="bg-white rounded-xl shadow overflow-hidden">
+    <table class="min-w-full text-sm">
+        <thead class="bg-slate-50">
+        <tr class="text-left text-slate-500">
+            <th class="py-2 px-3">Product</th>
+            <th class="py-2 px-3">Price</th>
+            <th class="py-2 px-3">Size</th>
+            <th class="py-2 px-3">Color</th>
+            <th class="py-2 px-3 text-right">Stock</th>
+            <th class="py-2 px-3 text-right">Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for product in products %}
+            <tr class="border-t">
+                <td class="py-2 px-3">
+                    <div class="font-medium">{{ product.name }}</div>
+                    <div class="text-xs text-slate-500">{{ product.product_id }}</div>
+                </td>
+                <td class="py-2 px-3">${{ product.price }}</td>
+                <td class="py-2 px-3">{{ product.size }}</td>
+                <td class="py-2 px-3">{{ product.color }}</td>
+                <td class="py-2 px-3 text-right">
+                    <span class="inline-flex items-center justify-center px-2 py-1 rounded-full text-xs
+                        {% if product.quantity == 0 %}
+                            bg-red-100 text-red-700
+                        {% elif product.quantity <= low_stock_threshold %}
+                            bg-amber-100 text-amber-800
+                        {% else %}
+                            bg-emerald-100 text-emerald-800
+                        {% endif %}
+                    ">
+                        {{ product.quantity }}
+                    </span>
+                </td>
+                <td class="py-2 px-3 text-right space-x-1">
+                    <a href="{% url 'product_label' product.pk %}"
+                       class="inline-flex px-2 py-1 rounded border border-slate-200 text-xs hover:bg-slate-50">
+                        Label
+                    </a>
+                    <a href="{% url 'product_edit' product.pk %}"
+                       class="inline-flex px-2 py-1 rounded border border-slate-200 text-xs hover:bg-slate-50">
+                        Edit
+                    </a>
+                    <a href="{% url 'product_delete' product.pk %}"
+                       class="inline-flex px-2 py-1 rounded border border-red-200 text-xs text-red-700 hover:bg-red-50">
+                        Delete
+                    </a>
+                </td>
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="6" class="py-6 text-center text-slate-500">
+                    No products yet. Create your first item.
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
