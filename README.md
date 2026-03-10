@@ -1,46 +1,72 @@
-## Storebase POS – QR-based Retail Point of Sale
+## Storebase POS – QR asosidagi savdo tizimi
 
-Storebase POS is a small, focused Point of Sale system for a women's clothing store.  
-It provides product management with QR labels, QR-based checkout, inventory tracking, and basic sales analytics.
+Storebase POS – ayollar kiyimlari do'koni uchun mo'ljallangan sodda, lekin kuchli savdo (POS) tizimi.  
+Tizim mahsulotlarni boshqarish, QR yorliqlar, QR orqali savdo, ombor nazorati va savdo hisobotlarini taqdim etadi. Butun interfeys **o'zbek tilida** va valyuta **so'm (UZS)** ko'rinishida.
 
 ### 1. Project structure
 
-At the top level:
+Asosiy papkalar:
 
-- **`manage.py`**: Django management entry point (runserver, migrations, etc.).
-- **`requirements.txt`**: Python dependencies (Django, QR code, Pillow).
-- **`storebase_pos/`**: Django project configuration.
-  - **`settings.py`**: Global settings (SQLite DB, apps, templates, static, media).
-  - **`urls.py`**: Root URL routing; includes `pos` app URLs and media serving in development.
-  - **`asgi.py` / `wsgi.py`**: Server entry points for ASGI/WSGI deployments.
-- **`pos/`**: Main POS application.
+- **`manage.py`**: Django buyruqlari (runserver, migrate va hokazo) uchun kirish nuqtasi.
+- **`requirements.txt`**: Python kutubxonalari (Django, QR code, Pillow).
+- **`storebase_pos/`**: Django loyihasi konfiguratsiyasi.
+  - **`settings.py`**: Umumiy sozlamalar (SQLite ma'lumotlar bazasi, ilovalar, shablonlar, static/media, til `uz`, vaqt mintaqasi `Asia/Tashkent`).
+  - **`urls.py`**: Asosiy marshrutlash, `pos` ilovasining URL-larini o'z ichiga oladi.
+  - **`asgi.py` / `wsgi.py`**: ASGI/WSGI serverlari uchun kirish nuqtalari.
+- **`pos/`**: Asosiy POS ilovasi.
   - **`models.py`**:
-    - `Product`: product catalog; fields: `product_id`, `name`, `price`, `size`, `color`, `quantity`, `created_at`, `qr_code_image`.
-      Automatically generates a PNG QR code containing `product_id` when created.
-    - `Sale`: header for a sale (one row per completed checkout).
-    - `SaleItem`: line items; fields: `sale`, `product`, `quantity`, `price`, `timestamp`.
+    - `Product`: katalog modeli; maydonlar:
+      - `id` (avtomatik),
+      - `product_id` (QR ichiga yoziladigan identifikator),
+      - `name`, `price`, `size`, `color`, `quantity`, `created_at`,
+      - `qr_code` (yaratilgan PNG faylga yo'l).
+    - `Sale`: bitta savdo uchun sarlavha; maydonlar:
+      - `id`,
+      - `created_at`,
+      - `total_amount` (shu savdo bo'yicha umumiy summa).
+    - `SaleItem`: savdo satrlari; maydonlar:
+      - `sale` (FK → `Sale`),
+      - `product` (FK → `Product`),
+      - `quantity`,
+      - `price`,
+      - `timestamp`.
   - **`views.py`**:
-    - `dashboard`: analytics (daily/weekly/monthly/yearly revenue, best sellers, low stock).
-    - `product_list`, `product_create`, `product_edit`, `product_delete`, `product_label`: product CRUD and printable QR label.
-    - `checkout`: QR scanner checkout UI.
-    - `api_get_product_by_code`: JSON lookup by `product_id` (used by QR scanner).
-    - `api_complete_sale`: accepts a cart payload and creates `Sale` + `SaleItem` rows, updates inventory.
-  - **`urls.py`**: URL patterns for products, checkout, APIs, and dashboard.
-  - **`migrations/`**: Database migrations for the above models.
-- **`templates/pos/`**: HTML templates using Tailwind CSS via CDN.
-  - `base.html`: shared layout, navigation, mobile-friendly shell.
-  - `dashboard.html`: analytics dashboard.
-  - `product_list.html`: product listing and management.
-  - `product_form.html`: add/edit product form.
-  - `product_confirm_delete.html`: delete confirmation.
-  - `product_label.html`: printable QR label page for each product.
-  - `checkout.html`: QR scanner page, cart interface, and “Complete sale” flow.
-- **`static/`**: Placeholder for static assets if you add custom CSS/JS later.
-- **`media/`** (created at runtime): stores generated QR code images under `media/qrcodes/`.
+    - `dashboard`: Boshqaruv paneli, quyidagilarni hisoblaydi: bugungi/haftalik/oylik/yillik savdo, eng ko'p sotilgan mahsulotlar, kam qolgan mahsulotlar, kunlik savdo grafigi.
+    - `product_list`, `product_create`, `product_edit`, `product_delete`, `product_label`: mahsulotlar ro'yxati, qo'shish/tahrirlash/o'chirish, QR yorliq chiqarish.
+    - `inventory`: ombordagi mahsulotlar sahifasi.
+    - `checkout`: QR skaner asosidagi POS savdo sahifasi.
+    - API'lar:
+      - `api_product_detail` – `/api/product/<product_id>` uchun, mahsulot ma'lumotlarini qaytaradi.
+      - `api_cart_add` – `/api/cart/add` uchun, POST `{product_id}` qabul qiladi va savatchaga qo'shish uchun mahsulot ma'lumotini qaytaradi.
+      - `api_sale_complete` – `/api/sale/complete` uchun, POST `{items: [...]}` qabul qiladi, `Sale` + `SaleItem` yozuvlari yaratadi, `total_amount` maydonini to'ldiradi va ombor qoldig'ini kamaytiradi.
+  - **`urls.py`**: Barcha yuqoridagi sahifalar va API yo'llari:
+    - `/` – Boshqaruv paneli,
+    - `/mahsulotlar/` – mahsulotlar,
+    - `/ombor/` – ombor,
+    - `/savdo/` – QR skaner POS sahifasi,
+    - `/api/product/<product_id>`, `/api/cart/add`, `/api/sale/complete`.
+  - **`admin.py`**:
+    - `ProductAdmin`: qidiruv (nomi, product_id), o'lcham/rang bo'yicha filter, ombordagi miqdorni rang bilan ko'rsatish (kam qoldi va tugagan holatlari).
+    - `SaleAdmin`: savdolar ro'yxati, ichida `SaleItem` inline ko'rinadi.
+    - `SaleItemAdmin`: satrlar bo'yicha alohida ko'rinish.
+  - **`templatetags/currency.py`**:
+    - `uzs` filtri: `150000` → `150 000 UZS` ko'rinishiga keltiradi.
+  - **`migrations/`**: ma'lumotlar bazasi migratsiyalari.
+- **`templates/pos/`**: TailwindCSS asosidagi HTML shablonlari (hammasi o'zbek tilida).
+  - `base.html`: umumiy skelet, navigatsiya: **Boshqaruv paneli**, **Mahsulotlar**, **Ombor**, **Savdo (QR)**.
+  - `dashboard.html`: savdo statistikasi va Chart.js grafigi.
+  - `product_list.html`: mahsulotlar ro'yxati, UZS ko'rinishida narx, "KAM QOLDI" belgilari.
+  - `product_form.html`: mahsulot qo'shish/tahrirlash formasi.
+  - `product_confirm_delete.html`: o'chirishni tasdiqlash.
+  - `product_label.html`: bir sahifaga bir nechta QR yorliqlar chiqarish uchun sahifa.
+  - `inventory.html`: ombor sahifasi (nomi, o'lcham, rang, narx, qoldiq).
+  - `checkout.html`: QR skaner POS sahifasi, savatcha va "Savdoni yakunlash" tugmasi.
+- **`static/`**: kerak bo'lsa qo'shimcha CSS/JS uchun.
+- **`media/`**: ish vaqtida avtomatik yaratiladi, `qrcodes/` ichida QR rasmlari saqlanadi.
 
 ### 2. Installation
 
-#### 2.1. Clone and enter the project
+#### 2.1. Loyihani papkaga joylashtirish
 
 ```bash
 cd /path/where/you/want/the/project
@@ -48,13 +74,13 @@ git clone <your-repo-url> storebase-pos   # or copy the folder into place
 cd storebase-pos
 ```
 
-If this is already on disk (e.g. via Cursor), just `cd` into the folder:
+Agar loyiha allaqachon kompyuteringizda bo'lsa (masalan, Cursor orqali), shu papkaga kiring:
 
 ```bash
 cd /Users/mirzied/storebase
 ```
 
-#### 2.2. Create virtual environment and install dependencies
+#### 2.2. Virtual muhit yaratish va kutubxonalarni o'rnatish
 
 ```bash
 python3 -m venv .venv
@@ -62,16 +88,16 @@ source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-#### 2.3. Set up the SQLite database
+#### 2.3. SQLite ma'lumotlar bazasini sozlash
 
 ```bash
 python manage.py migrate
 python manage.py createsuperuser  # optional, for Django admin
 ```
 
-This creates `db.sqlite3` in the project root.
+Bu amallar loyihaning ildizida `db.sqlite3` faylini yaratadi.
 
-### 3. Running the development server
+### 3. Serverni ishga tushirish
 
 From the project root with the virtualenv activated:
 
@@ -79,153 +105,165 @@ From the project root with the virtualenv activated:
 python manage.py runserver
 ```
 
-Then open the POS in your browser:
+Keyin brauzerda quyidagilarni oching:
 
-- POS UI: `http://127.0.0.1:8000/`
-- Admin (optional): `http://127.0.0.1:8000/admin/`
+- POS interfeysi: `http://127.0.0.1:8000/`
+- Admin (ixtiyoriy): `http://127.0.0.1:8000/admin/`
 
-### 4. Product management and QR label generation
+### 4. Mahsulot qo'shish va QR yorliq yaratish
 
-1. **Open the products page**  
-   Go to `http://127.0.0.1:8000/products/`.
+1. **Mahsulotlar sahifasini ochish**  
+   `http://127.0.0.1:8000/mahsulotlar/`
 
-2. **Create a new product**
-   - Click **“New product”**.
-   - Fill in:
-     - **Product ID** (e.g. `DRESS-2024-0001`) – this is what the QR encodes.
-     - **Name** (e.g. “Floral Summer Dress”).
-     - **Price**, **Size**, **Color**, **Quantity**.
-   - Click **“Save product”**.
+2. **Yangi mahsulot qo'shish**
+   - Yuqoridagi **“Mahsulot qo'shish”** tugmasini bosing.
+   - Quyidagi maydonlarni to'ldiring:
+     - **Mahsulot ID** (masalan, `DRESS-2024-0001`) – aynan shu qiymat QR kodga yoziladi.
+     - **Mahsulot nomi** (masalan, “Yozgi gulzor ko'ylak”).
+     - **Narx (UZS)**, **O'lcham**, **Rang**, **Ombordagi miqdor**.
+   - **“Saqlash”** tugmasini bosing.
 
-3. **Automatic QR code**
-   - When a product is saved the first time, the system generates a PNG QR code image containing `product_id`.
-   - The image is stored at `media/qrcodes/<product_id>.png`.
+3. **Avtomatik QR kod yaratish**
+   - Mahsulot birinchi marta saqlanganda, tizim `product_id` bo'yicha PNG formatdagi QR rasm yaratadi.
+   - Rasm `media/qrcodes/<product_id>.png` fayliga saqlanadi va `qr_code` maydoni orqali bog'lanadi.
 
-4. **Print QR labels**
-   - On the product list, click **“Label”** for a product.
-   - A label page opens showing:
-     - Product name, ID, size, color, price.
-     - The generated QR code.
-   - Click **“Print”** in the top-right of the page, then use your browser’s print dialogue to print onto label paper (or stickers).
+4. **QR yorliqlarni chop etish**
+   - Mahsulotlar ro'yxatida kerakli mahsulot yonidagi **“Yorliq”** tugmasini bosing.
+   - `product_label.html` sahifasi ochiladi:
+     - Har bir kichik blokda mahsulot nomi, o'lcham/rang, narx (UZS) va QR kod bo'ladi.
+     - Bir sahifada bir nechta yorliq (grid tarzida) ko'rsatiladi.
+   - Yuqoridagi **“Chop etish”** tugmasini bosing va brauzeringizning chop etish oynasidan foydalanib, yorliq/stiker qog'oziga chiqarib oling.
 
-### 5. QR-based checkout
+### 5. QR skaner asosidagi POS savdo
 
-1. **Open checkout page**  
-   Go to `http://127.0.0.1:8000/checkout/` on a device with a camera (laptop, tablet, or phone).
+1. **Savdo sahifasini ochish**  
+   `http://127.0.0.1:8000/savdo/` manzilini kamera mavjud qurilmada (noutbuk, planshet, telefon) oching.
 
-2. **Allow camera access**  
-   - The browser will ask for permission to use the camera.
-   - Grant access; the live preview appears inside the **“Scan items”** box.
+2. **Kameraga ruxsat berish**  
+   - Brauzer kamera uchun ruxsat so'raydi.
+   - Ruxsat bering; sahifadagi **“QR skaner”** oynasida jonli video chiqadi.
 
-3. **Scan product QR codes**
-   - Point the camera at a product QR label.
-   - When the QR code (containing `product_id`) is detected:
-     - The frontend calls `/api/product/<product_id>/`.
-     - The product is added to the cart on the right.
-   - Scan the same product multiple times to add multiple units, or adjust quantities using `+` / `–` in the cart.
+3. **Mahsulot QR kodini skanerlash**
+   - Kamerani yorliqqa qarating.
+   - QR kod ichidagi `product_id` o'qilgach, frontend `/api/cart/add` API'iga:
+     ```json
+     { "product_id": "<QR dan o'qilgan qiymat>" }
+     ```
+     jo'natadi.
+   - Server mahsulotni topib, JSON qaytaradi, frontend esa savatchaga **yangi satr qo'shadi yoki miqdorni oshiradi**.
+   - Bir xil QR kodni qayta-qayta skanerlash – o'sha mahsulot miqdorini oshiradi (yangi satr emas).
+   - Juda qisqa vaqtda bir necha marta o'qilganda tizim "dublikat kadr"larni e'tiborsiz qoldiradi (tez-tez bir kadrda qayta o'qishdan himoya).
 
-4. **Cart operations**
-   - **Increase/Decrease quantity**: use `+` and `–` buttons for each line.
-   - **Remove item**: click the small `x`.
-   - **Clear cart**: click **“Clear cart”** above the cart list.
+4. **Savatcha funksiyalari**
+   - Har bir satrda ko'rsatiladi:
+     - Mahsulot nomi,
+     - O'lcham, rang,
+     - Miqdor,
+     - Satr bo'yicha summa (UZS).
+   - Tugmalar:
+     - **`+`** – miqdorni oshirish.
+     - **`-`** – miqdorni kamaytirish (0 bo'lsa satr o'chadi).
+     - **“O'chirish”** – mahsulotni savatchadan butunlay olib tashlash.
+     - **“Savatchani tozalash”** – barcha mahsulotlarni o'chirish.
+   - Pastda:
+     - **“Jami mahsulotlar soni”**,
+     - **“Jami summa”** – `150000` → `150 000 UZS` tarzida formatlangan.
 
-5. **Complete the sale**
-   - When the cart is ready, click **“Complete sale”**.
-   - The browser sends a JSON payload to `/api/complete-sale/`:
-     - `items: [{ product_id, quantity }, ...]`
-   - On the server:
-     - A `Sale` record is created.
-     - One `SaleItem` is created per cart item with:
-       - `sale_id` (via FK to `Sale`),
-       - `product_id` (via FK to `Product`),
-       - `quantity`,
-       - `price` (snapshot of current product price),
-       - `timestamp`.
-     - Product `quantity` is reduced by the sold amount.
-     - If stock is insufficient, the sale is rejected with a clear error message.
-   - On success, the cart is cleared and a confirmation is shown (e.g. `Sale #5 completed.`).
+5. **Savdoni yakunlash**
+   - **“Savdoni yakunlash”** tugmasini bosing.
+   - Frontend `/api/sale/complete` ga quyidagi JSONni yuboradi:
+     ```json
+     {
+       "items": [
+         { "product_id": "DRESS-2024-0001", "quantity": 2 },
+         { "product_id": "SKIRT-2024-0005", "quantity": 1 }
+       ]
+     }
+     ```
+   - Backend:
+     - Yangi `Sale` yozuvini yaratadi.
+     - Har bir mahsulot uchun `SaleItem` qo'shadi (`quantity`, `price`, `timestamp`).
+     - Har bir mahsulotning `quantity` maydonini kamaytiradi.
+     - Umumiy summani hisoblab, `Sale.total_amount` maydoniga yozadi.
+     - Omborda mahsulot yetarli bo'lmasa, tegishli xabar (`"... uchun omborda yetarli mahsulot yo'q"`) bilan xatolik qaytaradi.
+   - Muvaffaqiyatli holatda:
+     - Savatcha tozalanadi.
+     - Ekranda `Savdo #N yakunlandi. Umumiy summa: 150 000 UZS.` kabi xabar chiqadi.
 
-### 6. Inventory management
+### 6. Ombor boshqaruvi
 
-- **Automatic stock reduction**:  
-  Every successful sale decrements `Product.quantity` for each item.
+- Har bir muvaffaqiyatli savdodan so'ng `Product.quantity` kamayadi.
+- **Ombor sahifasi** (`/ombor/`):
+  - Mahsulot nomi, o'lcham, rang, narx (UZS), qoldiq.
+  - Qoldiq bo'yicha rangli belgi:
+    - Yashil – yetarli zaxira.
+    - Sariq – `<= 5` dona (ustida "KAM QOLDI" yozuvi).
+    - Qizil – omborda qolmagan (`0`).
+- **Boshqaruv paneli** (`/`):
+  - Kam qolgan mahsulotlar alohida jadvalda ko'rsatiladi.
 
-- **Remaining stock display**:  
-  The products page (`/products/`) shows the current stock level for each item with color-coded badges:
-  - Green: healthy stock.
-  - Amber: low stock (≤ 5 units by default).
-  - Red: out of stock (0 units).
+### 7. Hisobotlar va boshqaruv paneli
 
-- **Low stock alerts in dashboard**:  
-  The dashboard (`/`) lists all products where `quantity` is below or equal to the low-stock threshold (5 by default).
+Bosh sahifa (`/`) quyidagilarni ko'rsatadi:
 
-### 7. Analytics dashboard
+- **Bugungi savdo** – 00:00 dan hozirgacha bo'lgan tushum.
+- **Haftalik savdo** – oxirgi 7 kun.
+- **Oylik savdo** – oxirgi 30 kun.
+- **Yillik savdo** – oxirgi 365 kun.
+- **Umumiy tushum** – yillik savdoga teng.
+- **Sotilgan mahsulotlar soni** – barcha `SaleItem.quantity` yig'indisi.
+- **Eng ko'p sotilgan mahsulotlar** – "Top 10" ro'yxati.
+- **Kam qolgan mahsulotlar** – `quantity <= 5`.
+- **Chart.js grafigi** – oxirgi 14 kunlik kunlik savdo (UZS) bo'yicha diagramma.
 
-The dashboard (`/`) shows key sales metrics:
+### 8. Yorliqlarni chop etish
 
-- **Daily revenue**: sum of `SaleItem.price * SaleItem.quantity` for sales since midnight.
-- **Weekly revenue**: last 7 days.
-- **Monthly revenue**: last 30 days.
-- **Yearly revenue**: last 365 days.
-- **Total products sold**: sum of `SaleItem.quantity` across all time.
-- **Best selling products**:
-  - Aggregated by product.
-  - Sorted by total units sold (top 10 displayed).
-- **Low stock alerts**:
-  - All products with stock ≤ 5 units.
-  - Highlighted rows for quick re-order decisions.
-- **Daily revenue chart (last 14 days)**:
-  - Simple bar-style visual built with Tailwind utility classes.
+- Mahsulotlar sahifasida **“Yorliq”** tugmasini bosing.
+- Ochilgan sahifada bir nechta bir xil yorliqlar grid tarzida ko'rinadi:
+  - Mahsulot nomi,
+  - O'lcham va rang,
+  - Narx (UZS),
+  - QR kod.
+- **“Chop etish”** tugmasi orqali brauzerning chop etish oynasidan foydalaning:
+  - Printerni tanlang.
+  - Yorliq qog'oziga mos sahifa hajmini tanlang.
+  - Kerak bo'lsa, "Background graphics" (fon grafika) ni yoqing.
 
-All analytics use Django ORM aggregations over the `SaleItem` table.
+### 9. POSni kundalik ishlatish (qadam-baqadam)
 
-### 8. Printing labels
+1. **Muhitni tayyorlash**
+   - Virtual muhit yaratish.
+   - `requirements.txt` bo'yicha kutubxonalarni o'rnatish.
+   - `python manage.py migrate` bilan migratsiyalarni ishlatish.
 
-- Use the **“Label”** link on the product list to open the label view.
-- The page has a simplified layout for printing:
-  - The header/navigation is hidden in print mode.
-  - The main content is a compact card suitable for sticker/label paper.
-- Use your browser’s **Print** menu or `Ctrl/Cmd + P`, then choose:
-  - The correct printer.
-  - Paper size matching your labels.
-  - “Background graphics” if you want QR code edges very crisp (optional).
+2. **Mahsulotlarni kiritish**
+   - `/mahsulotlar/` sahifasiga kiring.
+   - Har bir mahsulot uchun **“Mahsulot qo'shish”** tugmasidan foydalaning.
 
-### 9. Starting POS operations (end-to-end)
+3. **Yorliqlarni chop etish va yopishtirish**
+   - Har bir mahsulot uchun **“Yorliq”** sahifasidan kerakli yorliqlarni chop eting.
+   - Yorliqlarni kiyimlarga yoki teg'ga yopishtiring.
 
-1. **Set up environment**
-   - Create and activate the virtualenv.
-   - Install dependencies.
-   - Run migrations.
+4. **Do'konda savdo qilish**
+   - Kassadagi qurilmada `/savdo/` sahifasini oching va kun davomida ochiq qoldiring.
+   - Xaridor kelganda, mahsulotlarning QR yorliqlarini ketma-ket skaner qiling.
 
-2. **Create products**
-   - Navigate to `/products/`.
-   - Add all your store’s items with meaningful `product_id` values.
+5. **Savdoni yakunlash**
+   - Savatchadagi miqdorlarni tekshiring, kerak bo'lsa qo'l bilan +/- tugmalari bilan sozlang.
+   - **“Savdoni yakunlash”** tugmasini bosing.
 
-3. **Print and attach labels**
-   - For each product, open **“Label”** and print.
-   - Attach labels to physical items (or hang tags).
+6. **Ombor va hisobotlarni ko'rish**
+   - `/ombor/` – ombordagi qoldiqlarni tez ko'rish.
+   - `/` – savdo hisobotlari va eng ko'p sotilgan mahsulotlarni tahlil qilish.
 
-4. **Use checkout in the store**
-   - Open `/checkout/` on a tablet/laptop at the register.
-   - Keep the page open during the day.
 
-5. **Perform sales**
-   - Scan each item’s QR at checkout.
-   - Adjust quantities if necessary.
-   - Click **“Complete sale”** to finalize.
-
-6. **Monitor inventory and performance**
-   - Use `/` (dashboard) daily or weekly to:
-     - See revenue summaries.
-     - Identify best-selling products.
-     - Spot low stock items before they run out.
-
-### 10. Notes on scaling to multiple shops
+### 10. Bir nechta do'konlarga kengaytirish bo'yicha eslatmalar
 
 - **Database**: replace SQLite with PostgreSQL or MySQL when you need multi-store or cloud deployment.
 - **Multi-store support**: add a `Store` model and attach products and sales to a store via foreign keys.
 - **Authentication**: enable per-user logins with Django’s auth system and restrict actions based on roles (cashier, manager, admin).
 - **Deployment**: run behind a production-grade WSGI/ASGI server (e.g. gunicorn + nginx) and use HTTPS, especially for in-store tablets.
 
-This codebase is intentionally minimal and readable so it can be extended as your requirements grow.
+Kod bazasi ataylab sodda va tushunarli yozilgan, shuning uchun keyinchalik bir nechta filiallar, qo'shimcha rollar (kassir, menejer, admin) va boshqa modullarni qo'shish oson bo'ladi.
+
 

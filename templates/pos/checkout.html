@@ -1,19 +1,19 @@
 {% extends "pos/base.html" %}
 
-{% block title %}Checkout · Storebase POS{% endblock %}
+{% block title %}Savdo (QR skaner) · Storebase POS{% endblock %}
 
 {% block extra_head %}
     <script src="https://unpkg.com/html5-qrcode@2.3.10"></script>
 {% endblock %}
 
 {% block content %}
-<h1 class="text-2xl font-semibold mb-4">QR Checkout</h1>
+<h1 class="text-2xl font-semibold mb-4">Savdo (QR skaner)</h1>
 
 <div class="grid gap-4 md:grid-cols-2">
     <div class="bg-white rounded-xl shadow p-4">
-        <h2 class="font-semibold mb-2">Scan items</h2>
+        <h2 class="font-semibold mb-2">QR skaner</h2>
         <p class="text-xs text-slate-500 mb-3">
-            Point the camera at a product QR code. Each successful scan adds the item to the cart.
+            Kamerani mahsulot yorlig'idagi QR kodga qarating. Har bir muvaffaqiyatli skan savatchaga qo'shiladi.
         </p>
         <div id="qr-reader" class="w-full"></div>
         <div id="scan-status" class="mt-2 text-xs text-slate-500"></div>
@@ -21,31 +21,31 @@
 
     <div class="bg-white rounded-xl shadow p-4 flex flex-col">
         <div class="flex items-center justify-between mb-2">
-            <h2 class="font-semibold">Cart</h2>
+            <h2 class="font-semibold">Savatcha</h2>
             <button id="clear-cart"
                     class="text-xs text-slate-500 hover:text-slate-700">
-                Clear cart
+                Savatchani tozalash
             </button>
         </div>
 
         <div id="cart-items" class="flex-1 overflow-y-auto border rounded-lg divide-y max-h-80">
             <div class="p-4 text-sm text-slate-500" id="cart-empty">
-                No items yet. Scan a QR code to start.
+                Hozircha mahsulot yo'q. QR kodni skaner qiling.
             </div>
         </div>
 
         <div class="pt-3 mt-3 border-t">
             <div class="flex items-center justify-between mb-2">
-                <span class="text-sm text-slate-600">Total items</span>
+                <span class="text-sm text-slate-600">Jami mahsulotlar soni</span>
                 <span class="font-semibold" id="cart-total-items">0</span>
             </div>
             <div class="flex items-center justify-between mb-4">
-                <span class="text-sm text-slate-600">Total amount</span>
-                <span class="text-xl font-semibold" id="cart-total-amount">$0.00</span>
+                <span class="text-sm text-slate-600">Jami summa</span>
+                <span class="text-2xl font-semibold" id="cart-total-amount">0 UZS</span>
             </div>
             <button id="complete-sale"
                     class="w-full inline-flex items-center justify-center px-4 py-3 rounded-lg bg-emerald-600 text-white font-semibold text-lg shadow hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed">
-                Complete sale
+                Savdoni yakunlash
             </button>
             <div id="checkout-message" class="mt-2 text-xs"></div>
         </div>
@@ -56,6 +56,12 @@
 {% block extra_scripts %}
 <script>
     const cart = {};
+    let lastScan = { code: null, time: 0 };
+
+    function formatUzs(amount) {
+        const intVal = Math.floor(amount || 0);
+        return intVal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " UZS";
+    }
 
     function renderCart() {
         const container = document.getElementById("cart-items");
@@ -70,18 +76,18 @@
             emptyState.style.display = "none";
             items.forEach(item => {
                 const row = document.createElement("div");
-                row.className = "flex items-center justify-between px-3 py-2 text-sm";
+                row.className = "flex items-center justify-between px-3 py-3 text-sm";
                 row.innerHTML = `
                     <div>
                         <div class="font-medium">${item.name}</div>
                         <div class="text-xs text-slate-500">${item.product_id} · ${item.size} · ${item.color}</div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <button data-id="${item.product_id}" class="decrease px-2 py-1 rounded border text-xs">-</button>
-                        <span class="w-6 text-center">${item.quantity}</span>
-                        <button data-id="${item.product_id}" class="increase px-2 py-1 rounded border text-xs">+</button>
-                        <div class="w-20 text-right font-semibold">$${(item.price * item.quantity).toFixed(2)}</div>
-                        <button data-id="${item.product_id}" class="remove text-xs text-red-600 hover:underline">x</button>
+                        <button data-id="${item.product_id}" class="decrease px-3 py-2 rounded-full border text-lg leading-none">-</button>
+                        <span class="w-8 text-center font-semibold">${item.quantity}</span>
+                        <button data-id="${item.product_id}" class="increase px-3 py-2 rounded-full border text-lg leading-none">+</button>
+                        <div class="w-28 text-right font-semibold">${formatUzs(item.price * item.quantity)}</div>
+                        <button data-id="${item.product_id}" class="remove text-xs text-red-600 hover:underline">O'chirish</button>
                     </div>
                 `;
                 container.appendChild(row);
@@ -91,7 +97,7 @@
         const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
         const totalAmount = items.reduce((sum, item) => sum + item.quantity * item.price, 0);
         document.getElementById("cart-total-items").innerText = totalItems;
-        document.getElementById("cart-total-amount").innerText = `$${totalAmount.toFixed(2)}`;
+        document.getElementById("cart-total-amount").innerText = formatUzs(totalAmount);
         document.getElementById("complete-sale").disabled = items.length === 0;
     }
 
@@ -143,9 +149,9 @@
             }));
             const message = document.getElementById("checkout-message");
             message.className = "mt-2 text-xs text-slate-600";
-            message.innerText = "Processing sale...";
+            message.innerText = "Savdo yakunlanmoqda...";
             try {
-                const response = await fetch("{% url 'api_complete_sale' %}", {
+                const response = await fetch("{% url 'api_sale_complete' %}", {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
                     body: JSON.stringify({items}),
@@ -153,16 +159,16 @@
                 const data = await response.json();
                 if (!response.ok) {
                     message.className = "mt-2 text-xs text-red-600";
-                    message.innerText = data.error || "Sale failed.";
+                    message.innerText = data.error || "Savdoni yakunlashda xatolik.";
                 } else {
                     message.className = "mt-2 text-xs text-emerald-700";
-                    message.innerText = `Sale #${data.sale_id} completed.`;
+                    message.innerText = `Savdo #${data.sale_id} yakunlandi. Umumiy summa: ${formatUzs(data.total_amount)}.`;
                     for (const key in cart) delete cart[key];
                     renderCart();
                 }
             } catch (err) {
                 message.className = "mt-2 text-xs text-red-600";
-                message.innerText = "Network error while completing sale.";
+                message.innerText = "Tarmoq xatosi. Qayta urinib ko'ring.";
             }
         });
     }
@@ -170,29 +176,41 @@
     function startScanner() {
         const statusEl = document.getElementById("scan-status");
         function onScanSuccess(decodedText, decodedResult) {
-            statusEl.innerText = `Scanned: ${decodedText}`;
-            fetch(`/api/product/${encodeURIComponent(decodedText)}/`)
-                .then(r => {
-                    if (!r.ok) throw new Error("Product not found");
-                    return r.json();
-                })
-                .then(product => {
-                    addToCart(product);
+            const now = Date.now();
+            if (lastScan.code === decodedText && now - lastScan.time < 800) {
+                // bir xil QR kodi qisqa vaqt ichida takrorlansa, e'tibor bermaymiz
+                return;
+            }
+            lastScan = { code: decodedText, time: now };
+
+            statusEl.innerText = `O'qildi: ${decodedText}`;
+            fetch("{% url 'api_cart_add' %}", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({product_id: decodedText}),
+            })
+                .then(r => r.json().then(data => ({ ok: r.ok, data })))
+                .then(({ ok, data }) => {
+                    if (!ok) {
+                        statusEl.innerText = data.error || "Mahsulot topilmadi.";
+                        return;
+                    }
+                    addToCart(data);
                 })
                 .catch(err => {
-                    statusEl.innerText = `Error: ${err.message}`;
+                    statusEl.innerText = "Xatolik: serverga ulanish imkoni yo'q.";
                 });
         }
 
         function onScanFailure(error) {
-            // Ignored to keep scanning smooth
+            // e'tiborga olinmaydi, skaner ishini davom ettiradi
         }
 
         const html5QrcodeScanner = new Html5QrcodeScanner(
             "qr-reader",
             {
                 fps: 10,
-                qrbox: {width: 250, height: 250},
+                qrbox: {width: 280, height: 280},
                 aspectRatio: 1.0,
             },
             false

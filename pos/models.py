@@ -15,21 +15,21 @@ class Product(models.Model):
     ]
 
     product_id = models.CharField(max_length=50, unique=True)
-    name = models.CharField(max_length=200)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    size = models.CharField(max_length=10, choices=SIZES)
-    color = models.CharField(max_length=50)
-    quantity = models.PositiveIntegerField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
-    qr_code_image = models.ImageField(upload_to="qrcodes/", blank=True, null=True)
+    name = models.CharField("Nomi", max_length=200)
+    price = models.DecimalField("Narx (UZS)", max_digits=12, decimal_places=2)
+    size = models.CharField("O'lcham", max_length=10, choices=SIZES)
+    color = models.CharField("Rang", max_length=50)
+    quantity = models.PositiveIntegerField("Miqdor (ombor)", default=0)
+    created_at = models.DateTimeField("Yaratilgan vaqti", auto_now_add=True)
+    # QR code image stored on disk; encoded value is product_id
+    qr_code = models.ImageField("QR kod", upload_to="qrcodes/", blank=True, null=True)
 
     def __str__(self) -> str:
         return f"{self.name} ({self.product_id})"
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        # Generate QR code based on product_id if missing
-        if self.product_id and not self.qr_code_image:
+        if self.product_id and not self.qr_code:
             qr = qrcode.QRCode(
                 version=1,
                 error_correction=qrcode.constants.ERROR_CORRECT_M,
@@ -43,12 +43,15 @@ class Product(models.Model):
             buffer = BytesIO()
             img.save(buffer, format="PNG")
             file_name = f"{self.product_id}.png"
-            self.qr_code_image.save(file_name, ContentFile(buffer.getvalue()), save=False)
-            super().save(update_fields=["qr_code_image"])
+            self.qr_code.save(file_name, ContentFile(buffer.getvalue()), save=False)
+            super().save(update_fields=["qr_code"])
 
 
 class Sale(models.Model):
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField("Yaratilgan vaqti", auto_now_add=True)
+    total_amount = models.DecimalField(
+        "Umumiy summa (UZS)", max_digits=14, decimal_places=2, default=0
+    )
 
     def __str__(self) -> str:
         return f"Sale #{self.id} at {self.created_at:%Y-%m-%d %H:%M}"
@@ -56,10 +59,12 @@ class Sale(models.Model):
 
 class SaleItem(models.Model):
     sale = models.ForeignKey(Sale, related_name="items", on_delete=models.CASCADE)
-    product = models.ForeignKey(Product, related_name="sale_items", on_delete=models.PROTECT)
-    quantity = models.PositiveIntegerField()
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    timestamp = models.DateTimeField(auto_now_add=True)
+    product = models.ForeignKey(
+        Product, related_name="sale_items", on_delete=models.PROTECT
+    )
+    quantity = models.PositiveIntegerField("Soni")
+    price = models.DecimalField("Narx (UZS)", max_digits=12, decimal_places=2)
+    timestamp = models.DateTimeField("Vaqt", auto_now_add=True)
 
     def __str__(self) -> str:
         return f"{self.quantity} x {self.product.name}"

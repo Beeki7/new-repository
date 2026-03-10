@@ -1,4 +1,5 @@
 from datetime import timedelta
+import json
 
 from django.db.models import Sum, F
 from django.db.models.functions import TruncDate
@@ -46,13 +47,15 @@ def dashboard(request: HttpRequest) -> HttpResponse:
 
     # Time-series for daily revenue (last 14 days)
     last_14_days = now - timedelta(days=14)
-    daily_series = (
+    daily_series_qs = (
         revenue_qs.filter(timestamp__gte=last_14_days)
         .annotate(day=TruncDate("timestamp"))
         .values("day")
         .annotate(total=Sum("total"))
         .order_by("day")
     )
+    daily_labels = [p["day"].strftime("%d.%m") for p in daily_series_qs]
+    daily_values = [float(p["total"]) for p in daily_series_qs]
 
     context = {
         "daily_revenue": daily_revenue,
@@ -62,15 +65,29 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         "total_products_sold": total_products_sold,
         "best_selling_products": best_selling_products,
         "low_stock_products": low_stock_products,
-        "daily_series": daily_series,
         "low_stock_threshold": LOW_STOCK_THRESHOLD,
+        "daily_labels_json": json.dumps(daily_labels),
+        "daily_values_json": json.dumps(daily_values),
     }
     return render(request, "pos/dashboard.html", context)
 
 
 def product_list(request: HttpRequest) -> HttpResponse:
     products = Product.objects.all().order_by("name")
-    return render(request, "pos/product_list.html", {"products": products, "low_stock_threshold": LOW_STOCK_THRESHOLD})
+    return render(
+        request,
+        "pos/product_list.html",
+        {"products": products, "low_stock_threshold": LOW_STOCK_THRESHOLD},
+    )
+
+
+def inventory(request: HttpRequest) -> HttpResponse:
+    products = Product.objects.all().order_by("name")
+    return render(
+        request,
+        "pos/inventory.html",
+        {"products": products, "low_stock_threshold": LOW_STOCK_THRESHOLD},
+    )
 
 
 def product_create(request: HttpRequest) -> HttpResponse:
@@ -107,7 +124,6 @@ def product_edit(request: HttpRequest, pk: int) -> HttpResponse:
         product.size = request.POST.get("size", "").strip()
         product.color = request.POST.get("color", "").strip()
         product.quantity = request.POST.get("quantity") or product.quantity
-        product.qr_code_image = product.qr_code_image  # keep existing
         product.save()
         return redirect("product_list")
 
@@ -124,7 +140,7 @@ def product_delete(request: HttpRequest, pk: int) -> HttpResponse:
 
 def product_label(request: HttpRequest, pk: int) -> HttpResponse:
     product = get_object_or_404(Product, pk=pk)
-    if not product.qr_code_image:
+    if not product.qr_code:
         product.save()  # triggers QR generation
     return render(request, "pos/product_label.html", {"product": product})
 
@@ -133,7 +149,7 @@ def checkout(request: HttpRequest) -> HttpResponse:
     return render(request, "pos/checkout.html")
 
 
-def api_get_product_by_code(request: HttpRequest, product_id: str) -> JsonResponse:
+def api_product_detail(request: HttpRequest, product_id: str) -> JsonResponse:
     product = get_object_or_404(Product, product_id=product_id)
     data = {
         "id": product.id,
@@ -148,22 +164,51 @@ def api_get_product_by_code(request: HttpRequest, product_id: str) -> JsonRespon
 
 
 @csrf_exempt
-def api_complete_sale(request: HttpRequest) -> JsonResponse:
+def api_cart_add(request: HttpRequest) -> JsonResponse:
     if request.method != "POST":
-        return JsonResponse({"error": "Invalid method"}, status=405)
+        return JsonResponse({"error": "Faqat POST ruxsat etilgan"}, status=405)
 
-    import json
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+        product_id = payload.get("product_id", "").strip()
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({"error": "Yaroqsiz ma'lumot"}, status=400)
+
+    if not product_id:
+        return JsonResponse({"error": "Mahsulot ID kiritilmagan"}, status=400)
+
+    product = get_object_or_404(Product, product_id=product_id)
+    if product.quantity <= 0:
+        return JsonResponse({"error": "Bu mahsulot omborda yo'q"}, status=400)
+
+    data = {
+        "id": product.id,
+        "product_id": product.product_id,
+        "name": product.name,
+        "price": float(product.price),
+        "size": product.size,
+        "color": product.color,
+        "quantity": product.quantity,
+    }
+    return JsonResponse(data)
+
+
+@csrf_exempt
+def api_sale_complete(request: HttpRequest) -> JsonResponse:
+    if request.method != "POST":
+        return JsonResponse({"error": "Faqat POST ruxsat etilgan"}, status=405)
 
     try:
         payload = json.loads(request.body.decode("utf-8"))
         items = payload.get("items", [])
     except (json.JSONDecodeError, UnicodeDecodeError):
-        return JsonResponse({"error": "Invalid payload"}, status=400)
+        return JsonResponse({"error": "Yaroqsiz ma'lumot"}, status=400)
 
     if not items:
-        return JsonResponse({"error": "Cart is empty"}, status=400)
+        return JsonResponse({"error": "Savatcha bo'sh"}, status=400)
 
     sale = Sale.objects.create()
+    total_amount = 0
 
     for item in items:
         product_id = item.get("product_id")
@@ -175,19 +220,26 @@ def api_complete_sale(request: HttpRequest) -> JsonResponse:
 
         if product.quantity < quantity:
             return JsonResponse(
-                {"error": f"Insufficient stock for {product.name}"},
+                {"error": f"{product.name} uchun omborda yetarli mahsulot yo'q"},
                 status=400,
             )
 
-        SaleItem.objects.create(
+        sale_item = SaleItem.objects.create(
             sale=sale,
             product=product,
             quantity=quantity,
             price=product.price,
         )
 
+        total_amount += float(sale_item.price) * sale_item.quantity
+
         product.quantity -= quantity
         product.save(update_fields=["quantity"])
 
-    return JsonResponse({"status": "ok", "sale_id": sale.id})
+    sale.total_amount = total_amount
+    sale.save(update_fields=["total_amount"])
+
+    return JsonResponse(
+        {"status": "ok", "sale_id": sale.id, "total_amount": total_amount}
+    )
 

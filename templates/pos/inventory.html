@@ -1,15 +1,11 @@
 {% extends "pos/base.html" %}
 {% load currency %}
 
-{% block title %}Mahsulotlar · Storebase POS{% endblock %}
+{% block title %}Ombor · Storebase POS{% endblock %}
 
 {% block content %}
 <div class="flex items-center justify-between mb-4">
-    <h1 class="text-2xl font-semibold">Mahsulotlar</h1>
-    <a href="{% url 'product_create' %}"
-       class="inline-flex items-center px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-500">
-        + Mahsulot qo'shish
-    </a>
+    <h1 class="text-2xl font-semibold">Ombordagi mahsulotlar</h1>
 </div>
 
 <div class="bg-white rounded-xl shadow overflow-hidden">
@@ -17,11 +13,10 @@
         <thead class="bg-slate-50">
         <tr class="text-left text-slate-500">
             <th class="py-2 px-3">Mahsulot</th>
-            <th class="py-2 px-3">Narx</th>
             <th class="py-2 px-3">O'lcham</th>
             <th class="py-2 px-3">Rang</th>
+            <th class="py-2 px-3">Narx</th>
             <th class="py-2 px-3 text-right">Qoldiq</th>
-            <th class="py-2 px-3 text-right">Amallar</th>
         </tr>
         </thead>
         <tbody>
@@ -31,9 +26,9 @@
                     <div class="font-medium">{{ product.name }}</div>
                     <div class="text-xs text-slate-500">{{ product.product_id }}</div>
                 </td>
-                <td class="py-2 px-3">{{ product.price|uzs }}</td>
                 <td class="py-2 px-3">{{ product.size }}</td>
                 <td class="py-2 px-3">{{ product.color }}</td>
+                <td class="py-2 px-3">{{ product.price|uzs }}</td>
                 <td class="py-2 px-3 text-right">
                     <span class="inline-flex items-center justify-center px-2 py-1 rounded-full text-xs
                         {% if product.quantity == 0 %}
@@ -50,25 +45,11 @@
                         {% endif %}
                     </span>
                 </td>
-                <td class="py-2 px-3 text-right space-x-1">
-                    <a href="{% url 'product_label' product.pk %}"
-                       class="inline-flex px-2 py-1 rounded border border-slate-200 text-xs hover:bg-slate-50">
-                        Yorliq
-                    </a>
-                    <a href="{% url 'product_edit' product.pk %}"
-                       class="inline-flex px-2 py-1 rounded border border-slate-200 text-xs hover:bg-slate-50">
-                        Tahrirlash
-                    </a>
-                    <a href="{% url 'product_delete' product.pk %}"
-                       class="inline-flex px-2 py-1 rounded border border-red-200 text-xs text-red-700 hover:bg-red-50">
-                        O'chirish
-                    </a>
-                </td>
             </tr>
         {% empty %}
             <tr>
-                <td colspan="6" class="py-6 text-center text-slate-500">
-                    Hozircha mahsulot kiritilmagan.
+                <td colspan="5" class="py-6 text-center text-slate-500">
+                    Omborda mahsulot yo'q.
                 </td>
             </tr>
         {% endfor %}

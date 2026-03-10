@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uz">
 <head>
     <meta charset="UTF-8">
     <title>{% block title %}Storebase POS{% endblock %}</title>
@@ -15,9 +15,10 @@
                 Storebase POS
             </div>
             <nav class="flex gap-2 text-sm sm:text-base">
-                <a href="{% url 'dashboard' %}" class="px-3 py-2 rounded-md hover:bg-indigo-500 transition">Dashboard</a>
-                <a href="{% url 'product_list' %}" class="px-3 py-2 rounded-md hover:bg-indigo-500 transition">Products</a>
-                <a href="{% url 'checkout' %}" class="px-3 py-2 rounded-md bg-white text-indigo-700 font-semibold hover:bg-slate-100 transition">Checkout</a>
+                <a href="{% url 'dashboard' %}" class="px-3 py-2 rounded-md hover:bg-indigo-500 transition">Boshqaruv paneli</a>
+                <a href="{% url 'product_list' %}" class="px-3 py-2 rounded-md hover:bg-indigo-500 transition">Mahsulotlar</a>
+                <a href="{% url 'inventory' %}" class="px-3 py-2 rounded-md hover:bg-indigo-500 transition">Ombor</a>
+                <a href="{% url 'checkout' %}" class="px-3 py-2 rounded-md bg-white text-indigo-700 font-semibold hover:bg-slate-100 transition">Savdo (QR)</a>
             </nav>
         </div>
     </header>
@@ -30,7 +31,7 @@
 
     <footer class="border-t bg-white">
         <div class="max-w-5xl mx-auto px-4 py-3 text-xs text-slate-500 flex justify-between">
-            <span>Simple POS for boutiques</span>
+            <span>Oddiy butiklar uchun POS tizimi</span>
             <span>{% now "Y-m-d H:i" %}</span>
         </div>
     </footer>

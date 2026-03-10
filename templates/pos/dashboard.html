@@ -1,40 +1,62 @@
 {% extends "pos/base.html" %}
+{% load currency %}
 
-{% block title %}Dashboard · Storebase POS{% endblock %}
+{% block title %}Boshqaruv paneli · Storebase POS{% endblock %}
+
+{% block extra_head %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
 
 {% block content %}
-<h1 class="text-2xl font-semibold mb-4">Analytics Dashboard</h1>
+<h1 class="text-2xl font-semibold mb-4">Boshqaruv paneli</h1>
 
 <div class="grid gap-4 md:grid-cols-4 mb-6">
     <div class="bg-white rounded-xl shadow p-4">
-        <div class="text-xs uppercase text-slate-500">Daily revenue</div>
-        <div class="text-2xl font-semibold mt-1">${{ daily_revenue|floatformat:2 }}</div>
+        <div class="text-xs uppercase text-slate-500">Bugungi savdo</div>
+        <div class="text-2xl font-semibold mt-1">{{ daily_revenue|uzs }}</div>
     </div>
     <div class="bg-white rounded-xl shadow p-4">
-        <div class="text-xs uppercase text-slate-500">Weekly revenue</div>
-        <div class="text-2xl font-semibold mt-1">${{ weekly_revenue|floatformat:2 }}</div>
+        <div class="text-xs uppercase text-slate-500">Haftalik savdo</div>
+        <div class="text-2xl font-semibold mt-1">{{ weekly_revenue|uzs }}</div>
     </div>
     <div class="bg-white rounded-xl shadow p-4">
-        <div class="text-xs uppercase text-slate-500">Monthly revenue</div>
-        <div class="text-2xl font-semibold mt-1">${{ monthly_revenue|floatformat:2 }}</div>
+        <div class="text-xs uppercase text-slate-500">Oylik savdo</div>
+        <div class="text-2xl font-semibold mt-1">{{ monthly_revenue|uzs }}</div>
     </div>
     <div class="bg-white rounded-xl shadow p-4">
-        <div class="text-xs uppercase text-slate-500">Yearly revenue</div>
-        <div class="text-2xl font-semibold mt-1">${{ yearly_revenue|floatformat:2 }}</div>
+        <div class="text-xs uppercase text-slate-500">Yillik savdo</div>
+        <div class="text-2xl font-semibold mt-1">{{ yearly_revenue|uzs }}</div>
+    </div>
+</div>
+
+<div class="bg-white rounded-xl shadow p-4 mb-6">
+    <div class="grid gap-4 md:grid-cols-3 text-sm">
+        <div>
+            <div class="text-slate-500 text-xs uppercase">Umumiy tushum</div>
+            <div class="text-xl font-semibold mt-1">{{ yearly_revenue|uzs }}</div>
+        </div>
+        <div>
+            <div class="text-slate-500 text-xs uppercase">Sotilgan mahsulotlar soni</div>
+            <div class="text-xl font-semibold mt-1">{{ total_products_sold }}</div>
+        </div>
+        <div>
+            <div class="text-slate-500 text-xs uppercase">Kam qolgan mahsulotlar</div>
+            <div class="text-xl font-semibold mt-1">{{ low_stock_products|length }}</div>
+        </div>
     </div>
 </div>
 
 <div class="grid gap-6 md:grid-cols-2">
     <div class="bg-white rounded-xl shadow p-4">
         <div class="flex items-center justify-between mb-2">
-            <h2 class="font-semibold">Best selling products</h2>
+            <h2 class="font-semibold">Eng ko'p sotilgan mahsulotlar</h2>
             <span class="text-xs text-slate-500">Top 10</span>
         </div>
         <table class="min-w-full text-sm">
             <thead>
             <tr class="text-left text-slate-500 border-b">
-                <th class="py-2 pr-2">Product</th>
-                <th class="py-2 px-2 text-right">Units sold</th>
+                <th class="py-2 pr-2">Mahsulot</th>
+                <th class="py-2 px-2 text-right">Soni</th>
             </tr>
             </thead>
             <tbody>
@@ -49,7 +71,7 @@
             {% empty %}
                 <tr>
                     <td colspan="2" class="py-4 text-center text-slate-500">
-                        No sales yet.
+                        Hozircha savdo yo'q.
                     </td>
                 </tr>
             {% endfor %}
@@ -59,14 +81,14 @@
 
     <div class="bg-white rounded-xl shadow p-4">
         <div class="flex items-center justify-between mb-2">
-            <h2 class="font-semibold">Low stock alerts</h2>
-            <span class="text-xs text-slate-500">Below {{ low_stock_threshold }} units</span>
+            <h2 class="font-semibold">Kam qolgan mahsulotlar</h2>
+            <span class="text-xs text-slate-500">{{ low_stock_threshold }} donadan kam</span>
         </div>
         <table class="min-w-full text-sm">
             <thead>
             <tr class="text-left text-slate-500 border-b">
-                <th class="py-2 pr-2">Product</th>
-                <th class="py-2 px-2 text-right">Stock</th>
+                <th class="py-2 pr-2">Mahsulot</th>
+                <th class="py-2 px-2 text-right">Qoldiq</th>
             </tr>
             </thead>
             <tbody>
@@ -76,12 +98,17 @@
                         <div class="font-medium">{{ product.name }}</div>
                         <div class="text-xs text-slate-500">{{ product.product_id }} · {{ product.size }} · {{ product.color }}</div>
                     </td>
-                    <td class="py-2 px-2 text-right font-semibold">{{ product.quantity }}</td>
+                    <td class="py-2 px-2 text-right font-semibold">
+                        {{ product.quantity }}
+                        {% if product.quantity < low_stock_threshold %}
+                            <span class="ml-1 text-[10px] font-semibold text-red-700">KAM QOLDI</span>
+                        {% endif %}
+                    </td>
                 </tr>
             {% empty %}
                 <tr>
                     <td colspan="2" class="py-4 text-center text-slate-500">
-                        No low stock items 🎉
+                        Hamma mahsulotlar yetarli.
                     </td>
                 </tr>
             {% endfor %}
@@ -91,23 +118,41 @@
 </div>
 
 <div class="mt-6 bg-white rounded-xl shadow p-4">
-    <h2 class="font-semibold mb-2">Daily revenue (last 14 days)</h2>
-    <div class="grid grid-cols-7 gap-2 text-xs">
-        {% for point in daily_series %}
-            <div class="flex flex-col items-center">
-                <div class="h-16 w-full bg-indigo-100 rounded">
-                    {% if point.total %}
-                        <div class="bg-indigo-500 rounded h-full" style="height: {{ point.total|floatformat:0 }}%"></div>
-                    {% endif %}
-                </div>
-                <div class="mt-1 text-[10px] text-slate-500">
-                    {{ point.day|date:"m-d" }}
-                </div>
-            </div>
-        {% empty %}
-            <div class="text-slate-500">No sales yet.</div>
-        {% endfor %}
-    </div>
+    <h2 class="font-semibold mb-2">So'nggi 14 kunlik savdo</h2>
+    <canvas id="dailyRevenueChart" height="120"></canvas>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const labels = JSON.parse('{{ daily_labels_json|escapejs }}');
+    const values = JSON.parse('{{ daily_values_json|escapejs }}');
+    const ctx = document.getElementById('dailyRevenueChart').getContext('2d');
+    if (labels.length > 0) {
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Kunlik savdo (UZS)',
+                    data: values,
+                    backgroundColor: 'rgba(79, 70, 229, 0.7)',
+                    borderRadius: 4,
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString('uz-UZ') + ' UZS';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
 {% endblock %}
 
