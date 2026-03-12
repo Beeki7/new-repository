@@ -25,3 +25,12 @@ def uzs(value):
     """
     return _format_uzs(value)
 
+
+@register.filter
+def times(value):
+    """Return range(value) so templates can loop N times: {% for i in qty|times %}"""
+    try:
+        return range(int(value))
+    except (TypeError, ValueError):
+        return range(0)
+
