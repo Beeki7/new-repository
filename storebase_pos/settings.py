@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -24,8 +25,9 @@ SECRET_KEY = 'django-insecure-ex(wzfydacc(_)c&jumc1g@6k*fhgm_ry0u@h%r6gv#%dzr2h=
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
+ALLOWED_HOSTS = ["*"]
 
-ALLOWED_HOSTS = []
+#ALLOWED_HOSTS = ["127.0.0.1", "localhost", "10.55.9.133"]
 
 
 # Application definition
@@ -78,8 +80,14 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+        'OPTIONS': {
+            'timeout': 20,  # SQLite lock kutish vaqti (sekund)
+        },
     }
 }
+
+# CSRF cookie 1 yil amal qiladi (uzoq vaqt formda qolsa ham muammo bo'lmaydi)
+CSRF_COOKIE_AGE = 31449600
 
 
 # Password validation

@@ -1,69 +1,118 @@
-{% extends "pos/base.html" %}
-
-{% block title %}{% if product %}Mahsulotni tahrirlash{% else %}Yangi mahsulot{% endif %} · Storebase POS{% endblock %}
-
-{% block content %}
+{% extends "pos/base.html" %} {% block title %}{% if product %}Mahsulotni
+tahrirlash{% else %}Yangi mahsulot{% endif %} · Storebase POS{% endblock %} {%
+block content %}
 <h1 class="text-2xl font-semibold mb-4">
-    {% if product %}Mahsulotni tahrirlash{% else %}Yangi mahsulot{% endif %}
+  {% if product %}Mahsulotni tahrirlash{% else %}Yangi mahsulot{% endif %}
 </h1>
 
 <form method="post" class="bg-white rounded-xl shadow p-4 space-y-4 max-w-xl">
-    {% csrf_token %}
+  {% csrf_token %}
+  <div>
+    <label class="block text-sm font-medium text-slate-700 mb-1"
+      >Mahsulot ID</label
+    >
+    <input
+      type="text"
+      name="product_id"
+      required
+      value="{{ product.product_id|default_if_none:'' }}"
+      class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
+    />
+    <p class="mt-1 text-xs text-slate-500">
+      QR kodga aynan shu qiymat yoziladi va u noyob bo'lishi kerak.
+    </p>
+  </div>
+  <div>
+    <label class="block text-sm font-medium text-slate-700 mb-1"
+      >Mahsulot nomi</label
+    >
+    <input
+      type="text"
+      name="name"
+      required
+      value="{{ product.name|default_if_none:'' }}"
+      class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
+    />
+  </div>
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
     <div>
-        <label class="block text-sm font-medium text-slate-700 mb-1">Mahsulot ID</label>
-        <input type="text" name="product_id" required
-               value="{{ product.product_id|default_if_none:'' }}"
-               class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
-        <p class="mt-1 text-xs text-slate-500">
-            QR kodga aynan shu qiymat yoziladi va u noyob bo'lishi kerak.
-        </p>
+      <label class="block text-sm font-medium text-slate-700 mb-1"
+        >Narx (UZS)</label
+      >
+      <input
+        type="number"
+        step="1"
+        min="0"
+        name="price"
+        required
+        value="{{ product.price|default_if_none:'' }}"
+        class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
+      />
     </div>
     <div>
-        <label class="block text-sm font-medium text-slate-700 mb-1">Mahsulot nomi</label>
-        <input type="text" name="name" required
-               value="{{ product.name|default_if_none:'' }}"
-               class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
-    </div>
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Narx (UZS)</label>
-            <input type="number" step="1" min="0" name="price" required
-                   value="{{ product.price|default_if_none:'' }}"
-                   class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">O'lcham</label>
-            <select name="size" required
-                    class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
-                <option value="">O'lchamni tanlang</option>
-                {% for code, label in sizes %}
-                    <option value="{{ code }}" {% if product and product.size == code %}selected{% endif %}>
-                        {{ label }}
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Rang</label>
-            <input type="text" name="color" required
-                   value="{{ product.color|default_if_none:'' }}"
-                   class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
-        </div>
+      <label class="block text-sm font-medium text-slate-700 mb-1"
+        >O'lcham</label
+      >
+      <select
+        name="size"
+        class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
+      >
+        <option value="">O'lchamni tanlang</option>
+        {% for code, label in sizes %}
+        <option
+          value="{{ code }}"
+          {%
+          if
+          product
+          and
+          product.size=""
+          ="code"
+          %}selected{%
+          endif
+          %}
+        >
+          {{ label }}
+        </option>
+        {% endfor %}
+      </select>
     </div>
     <div>
-        <label class="block text-sm font-medium text-slate-700 mb-1">Ombordagi miqdor</label>
-        <input type="number" min="0" name="quantity" required
-               value="{{ product.quantity|default_if_none:0 }}"
-               class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+      <label class="block text-sm font-medium text-slate-700 mb-1">Rang</label>
+      <input
+        type="text"
+        name="color"
+        required
+        value="{{ product.color|default_if_none:'' }}"
+        class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
+      />
     </div>
+  </div>
+  <div>
+    <label class="block text-sm font-medium text-slate-700 mb-1"
+      >Ombordagi miqdor</label
+    >
+    <input
+      type="number"
+      min="0"
+      name="quantity"
+      required
+      value="{{ product.quantity|default_if_none:0 }}"
+      class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
+    />
+  </div>
 
-    <div class="flex items-center justify-between pt-2">
-        <a href="{% url 'product_list' %}" class="text-slate-600 text-sm hover:underline">Bekor qilish</a>
-        <button type="submit"
-                class="inline-flex items-center px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-500">
-            Saqlash
-        </button>
-    </div>
+  <div class="flex items-center justify-between pt-2">
+    <a
+      href="{% url 'product_list' %}"
+      class="text-slate-600 text-sm hover:underline"
+      >Bekor qilish</a
+    >
+    <button
+      type="submit"
+      class="inline-flex items-center px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-500"
+    >
+      Saqlash
+    </button>
+  </div>
 </form>
 {% endblock %}
-

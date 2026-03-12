@@ -117,9 +117,15 @@
     </div>
 </div>
 
-<div class="mt-6 bg-white rounded-xl shadow p-4">
-    <h2 class="font-semibold mb-2">So'nggi 14 kunlik savdo</h2>
-    <canvas id="dailyRevenueChart" height="120"></canvas>
+<div class="mt-6 grid gap-6 lg:grid-cols-2">
+    <div class="bg-white rounded-xl shadow p-4">
+        <h2 class="font-semibold mb-2">So'nggi 14 kunlik savdo</h2>
+        <canvas id="dailyRevenueChart" height="120"></canvas>
+    </div>
+    <div class="bg-white rounded-xl shadow p-4">
+        <h2 class="font-semibold mb-2">Top sotuvlar (dona)</h2>
+        <canvas id="topProductsChart" height="120"></canvas>
+    </div>
 </div>
 {% endblock %}
 
@@ -127,6 +133,8 @@
 <script>
     const labels = JSON.parse('{{ daily_labels_json|escapejs }}');
     const values = JSON.parse('{{ daily_values_json|escapejs }}');
+    const topLabels = JSON.parse('{{ top_labels_json|escapejs }}');
+    const topValues = JSON.parse('{{ top_values_json|escapejs }}');
     const ctx = document.getElementById('dailyRevenueChart').getContext('2d');
     if (labels.length > 0) {
         new Chart(ctx, {
@@ -149,6 +157,29 @@
                             }
                         }
                     }
+                }
+            }
+        });
+    }
+
+    const ctxTop = document.getElementById('topProductsChart').getContext('2d');
+    if (topLabels.length > 0) {
+        new Chart(ctxTop, {
+            type: 'bar',
+            data: {
+                labels: topLabels,
+                datasets: [{
+                    label: 'Sotilgan (dona)',
+                    data: topValues,
+                    backgroundColor: 'rgba(16, 185, 129, 0.65)',
+                    borderRadius: 4,
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { precision: 0 } }
                 }
             }
         });

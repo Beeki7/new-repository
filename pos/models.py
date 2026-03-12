@@ -17,7 +17,7 @@ class Product(models.Model):
     product_id = models.CharField(max_length=50, unique=True)
     name = models.CharField("Nomi", max_length=200)
     price = models.DecimalField("Narx (UZS)", max_digits=12, decimal_places=2)
-    size = models.CharField("O'lcham", max_length=10, choices=SIZES)
+    size = models.CharField("O'lcham", max_length=10, choices=SIZES, blank=True, default="")
     color = models.CharField("Rang", max_length=50)
     quantity = models.PositiveIntegerField("Miqdor (ombor)", default=0)
     created_at = models.DateTimeField("Yaratilgan vaqti", auto_now_add=True)
